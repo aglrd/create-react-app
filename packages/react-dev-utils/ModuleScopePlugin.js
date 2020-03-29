@@ -10,6 +10,18 @@
 const chalk = require('chalk');
 const path = require('path');
 const os = require('os');
+const fs = require('fs');
+
+function findClosestPackage(srcPath) {
+  let tryCurrentPath = path.dirname(srcPath);
+  while (
+    tryCurrentPath.indexOf('/') &&
+    !fs.existsSync(path.resolve(tryCurrentPath, 'package.json'))
+  ) {
+    tryCurrentPath = path.dirname(tryCurrentPath);
+  }
+  return tryCurrentPath;
+}
 
 class ModuleScopePlugin {
   constructor(appSrc, allowedFiles = []) {
@@ -59,8 +71,10 @@ class ModuleScopePlugin {
           appSrcs.every(appSrc => {
             const requestRelative = path.relative(appSrc, requestFullPath);
             return (
-              requestRelative.startsWith('../') ||
-              requestRelative.startsWith('..\\')
+              findClosestPackage(request.context.issuer) ===
+                findClosestPackage(appSrc) &&
+              (requestRelative.startsWith('../') ||
+                requestRelative.startsWith('..\\'))
             );
           })
         ) {

@@ -66,6 +66,22 @@ module.exports = function(webpackEnv) {
   const isEnvDevelopment = webpackEnv === 'development';
   const isEnvProduction = webpackEnv === 'production';
 
+  console.log(`You can customize this build by setting the following env variables:
+
+NODE_ENV: ( Set to "${process.env.NODE_ENV}")
+RS_BUILD_PATH: If set then builds to that path ${
+    process.env.RS_BUILD_PATH ? ` ( Set to "${process.env.RS_BUILD_PATH}")` : ''
+  }
+
+Additional settings:
+webpackEnv: ${webpackEnv}
+
+`);
+
+  paths.appBuild = process.env.RS_BUILD_PATH
+    ? path.resolve(process.env.RS_BUILD_PATH)
+    : paths.appBuild;
+
   // Variable used for enabling profiling in Production
   // passed into alias object. Uses a flag if passed into the build command
   const isEnvProductionProfile =
@@ -366,6 +382,26 @@ module.exports = function(webpackEnv) {
           // match the requirements. When no loader matches it will fall
           // back to the "file" loader at the end of the loader list.
           oneOf: [
+            {
+              test: /\.less$/,
+              use: [
+                'style-loader',
+                {
+                  loader: 'css-loader',
+                  options: {
+                    importLoaders: 2,
+                    sourceMap: false,
+                  },
+                },
+                {
+                  loader: 'less-loader',
+                  options: {
+                    javascriptEnabled: true,
+                  },
+                },
+              ],
+              sideEffects: true,
+            },
             // "url" loader works like "file" loader except that it embeds assets
             // smaller than specified limit in bytes as data URLs to avoid requests.
             // A missing `test` is equivalent to a match.
@@ -375,6 +411,18 @@ module.exports = function(webpackEnv) {
               options: {
                 limit: imageInlineSizeLimit,
                 name: 'static/media/[name].[hash:8].[ext]',
+              },
+            },
+            {
+              test: /\.tsx?$/,
+              loader: 'ts-loader',
+              exclude: /node_modules/,
+              options: {
+                transpileOnly: true,
+                compilerOptions: {
+                  outDir: './dist/',
+                  jsx: 'react',
+                },
               },
             },
             // Process application JS with Babel.
